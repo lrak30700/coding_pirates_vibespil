@@ -112,7 +112,9 @@ export async function openChrome({ debugPort, profileDir, windowSize = "1280,800
       `--remote-debugging-port=${debugPort}`,
       `--user-data-dir=${profileDir}`,
       "--no-sandbox",
-      "--disable-gpu",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
       // A background check must not play through the developer's speakers.
       "--mute-audio",
       "--hide-scrollbars",

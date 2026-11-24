@@ -13,9 +13,16 @@
  * docs/decisions/Let the author attach the screenshots.md.
  */
 import { createServer } from "node:http";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { rm } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 
@@ -28,6 +35,15 @@ const shotsDir = join(root, ".art/shots");
 const SHEET = "contact-sheet.png";
 const CELL_HEIGHT = 300;
 const COLUMNS = 4;
+
+function isEntryPoint() {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
 
 function escapeHtml(text) {
   return text
@@ -180,7 +196,7 @@ export async function buildSheet() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isEntryPoint()) {
   let sheet;
   try {
     sheet = await buildSheet();
