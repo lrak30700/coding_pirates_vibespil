@@ -139,12 +139,21 @@ async function checkPage(browser, port, scenario) {
     const page = await evaluate(`(() => {
       const heading = document.querySelector("main > h1");
       const bounds = heading?.getBoundingClientRect();
+      const shellBounds = document.querySelector(".game-shell")?.getBoundingClientRect();
+      const gameBounds = shellBounds && {
+        left: shellBounds.left,
+        right: shellBounds.right,
+        top: shellBounds.top,
+        bottom: shellBounds.bottom,
+      };
       return {
         title: document.title,
         language: document.documentElement.lang,
         heading: heading?.textContent,
         headings: document.querySelectorAll("h1").length,
         introduction: document.querySelector("main > p")?.textContent,
+        gameLabel: document.querySelector("#game-canvas")?.getAttribute("aria-label"),
+        lookControl: document.querySelector('input[aria-label="Mouse look sensitivity"]')?.value,
         viewport: document.querySelector('meta[name="viewport"]')?.content,
         assets: [...document.querySelectorAll('script[type="module"][src], link[rel="stylesheet"]')]
           .map(element => element.src || element.href),
@@ -153,17 +162,32 @@ async function checkPage(browser, port, scenario) {
           getComputedStyle(document.documentElement).backgroundColor === "rgb(248, 250, 252)" : false,
         fits: bounds ? bounds.left >= 0 && bounds.right <= innerWidth &&
           bounds.top >= 0 && bounds.bottom <= innerHeight &&
-          document.documentElement.scrollWidth <= innerWidth : false
+          document.documentElement.scrollWidth <= innerWidth : false,
+        gameFits: gameBounds ? gameBounds.left >= 0 && gameBounds.right <= innerWidth &&
+          gameBounds.top >= 0 && gameBounds.bottom <= innerHeight : false,
+        gameBounds
       };
     })()`);
-    assert.equal(page.title, "Hello, world!");
+    assert.equal(page.title, "Neon Siege");
     assert.equal(page.language, "en");
-    assert.equal(page.heading, "Hello, world!");
+    assert.equal(page.heading, "Neon Siege");
     assert.equal(page.headings, 1);
-    assert.equal(page.introduction, "Your next static web app starts here.");
+    assert.equal(
+      page.introduction,
+      "10-level campaign · choose an upgrade after each level · collect alien coins to buy replacement weapons · WASD move · right-click aim · left-click fire/throw · 1-4 or scroll to switch · Shift sprint · Ctrl crouch · Space jump · E shuttle · A/D steer and W/S climb through flight rings · R reload · beat the UFO timer.",
+    );
+    assert.equal(
+      page.gameLabel,
+      "Neon Siege ten-level 3D first-person alien shooter campaign with expanding rooms, UFO deployments, shuttle extraction and ring flight, aiming, grenades, and alien ammo rewards",
+    );
+    assert.equal(page.lookControl, "0.7", "The mouse-look sensitivity control is available.");
     assert.equal(page.viewport, "width=device-width, initial-scale=1.0");
     assert.ok(page.styled, "The built stylesheet must affect the heading.");
     assert.ok(page.fits, "The heading must fit the viewport without horizontal overflow.");
+    assert.ok(
+      page.gameFits,
+      `${scenario.name}: game bounds ${JSON.stringify(page.gameBounds)} must fit the viewport.`,
+    );
     assert.ok(page.assets.length >= 2, "Discover both built JavaScript and stylesheet assets.");
     for (const asset of page.assets) {
       assert.ok(asset.startsWith(`${url}assets/`), `Asset escapes hosting prefix: ${asset}`);
